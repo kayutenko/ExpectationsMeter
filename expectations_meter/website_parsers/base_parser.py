@@ -69,6 +69,7 @@ class Parser:
         self.output.save()
         self.output.close()
 
+
 class MacrumorsParser(Parser):
     def urls_collector(self):
         urls = []
@@ -109,16 +110,17 @@ class AppleInsiderParser(Parser):
         for year in range(9, 18):
             if year < 10: year = '0' + str(year)
             for month in range(1, 13):
-                if month < 10:
-                    month = '0' + str(month)
-                    for day in range(1, 32):
-                        if day < 10: day = '0' + str(day)
-                        url = "http://appleinsider.com/archives/{year}/{month}/{day}/page/1".format(year=year, month=month, day=day)
-                        html = self.get_data(url)
-                        content = html.select('#content')[0]
-                        urls_found = ['http:' + a.get('href') for a in content.select('.post a')]
-                        print(year, month, 'URL: ', url, "URLS found:", len(urls_found))
-                        urls.extend(urls_found)
+                if month < 10: month = '0' + str(month)
+                for day in range(1, 32):
+                    if day < 10: day = '0' + str(day)
+                    url = "http://appleinsider.com/archives/{year}/{month}/{day}/page/1".format(year=year, month=month, day=day)
+                    html = self.get_data(url)
+                    content = html.select('#content')[0]
+                    urls_found = ['http:' + a.get('href') for a in content.select('.post a')]
+                    print(year, month, 'URL: ', url, "URLS found:", len(urls_found))
+                    urls.extend(urls_found)
+        with open('AppleInsiderUrls', 'w', encoding='utf-8') as f:
+            [f.write(i + '\n') for i in urls]
         return urls
 
     def article_parser(self, data):
@@ -132,8 +134,6 @@ class AppleInsiderParser(Parser):
         if '' in list(output.values()):
             raise Exception('Something went wrong and one var is empty')
         return output
-
-
 
 if __name__ == '__main__':
     # url = 'https://www.macrumors.com/2003/05/09/ibm-gobi-mojave-powerpc-970-and-beyond/'
