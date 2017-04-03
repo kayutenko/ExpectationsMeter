@@ -1,5 +1,7 @@
+import re
 import requests
 import pandas as pd
+import json
 from bs4 import BeautifulSoup
 from pprint import pprint as pp
 from collections import OrderedDict
@@ -100,10 +102,41 @@ class MacrumorsParser(Parser):
             raise Exception('Something went wrong and one var is empty')
         return output
 
+
+class AppleInsiderParser(Parser):
+    def urls_collector(self):
+        urls = []
+        for year in range(9, 18):
+            if year < 10: year = '0' + str(year)
+            for month in range(1, 13):
+                if month < 10:
+                    month = '0' + str(month)
+                    for day in range(1, 32):
+                        if day < 10: day = '0' + str(day)
+                        url = "http://appleinsider.com/archives/{year}/{month}/{day}/page/1".format(year=year, month=month, day=day)
+                        html = self.get_data(url)
+                        content = html.select('#content')[0]
+                        urls_found = ['http:' + a.get('href') for a in content.select('.post a')]
+                        print(year, month, 'URL: ', url, "URLS found:", len(urls_found))
+                        urls.extend(urls_found)
+        return urls
+
+    def article_parser(self, data):
+        output = OrderedDict()
+        article_data = json.loads(self.get_element(data, "script[type='application/ld+json']"))
+        output['title'] = article_data['headline']
+        body = BeautifulSoup(str(BeautifulSoup(article_data['articleBody'], 'html.parser').get_text()), 'lxml').get_text()
+        output['body'] = re.sub('\n{2,}|\r\n','\n', body)
+        output['author'] = article_data['author']['name']
+        output['datetime'] = article_data['datePublished']
+        if '' in list(output.values()):
+            raise Exception('Something went wrong and one var is empty')
+        return output
+
+
+
 if __name__ == '__main__':
     # url = 'https://www.macrumors.com/2003/05/09/ibm-gobi-mojave-powerpc-970-and-beyond/'
 
-    test = MacrumorsParser('macrumors3.xlsx')
-    # data = test.get_data(url)
-    # pp(test.article_parser(data))
+    test = AppleInsiderParser('appleinsider.xlsx')
     test.parse()
