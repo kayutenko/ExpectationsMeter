@@ -5,6 +5,7 @@ import json
 from bs4 import BeautifulSoup
 from pprint import pprint as pp
 from collections import OrderedDict
+from time import sleep
 import os
 
 
@@ -135,8 +136,41 @@ class AppleInsiderParser(Parser):
             raise Exception('Something went wrong and one var is empty')
         return output
 
-if __name__ == '__main__':
-    # url = 'https://www.macrumors.com/2003/05/09/ibm-gobi-mojave-powerpc-970-and-beyond/'
 
-    test = AppleInsiderParser('appleinsider.xlsx')
+class NineToFiveMacParser(Parser):
+    def urls_collector(self):
+        urls = []
+        for year in range(2009, 2018):
+            for month in range(1, 13):
+                if month < 10: month = '0' + str(month)
+                for day in range(1, 31):
+                    if day < 10: day = '0' + str(day)
+                    url = "https://9to5mac.com/{year}/{month}/{day}/".format(year=year, month=month, day=day)
+                    html = self.get_data(url)
+                    content = html.select('#content')[0]
+                    urls_found = [a.get('href') for a in content.select('.post-title a')]
+                    print(year, month, 'URL: ', url, "URLS found:", len(urls_found))
+                    urls.extend(urls_found)
+                    # sleep(2)
+        with open('NineToFiveMacUrls', 'w', encoding='utf-8') as f:
+            [f.write(i + '\n') for i in urls]
+        return urls
+
+    def article_parser(self, data):
+        output = OrderedDict()
+        article = data.select('.post-content')[0]
+        output['title'] = self.get_element(article, 'h1.post-title a')
+        output['body'] = self.get_element(article, '.post-body').strip()
+        output['author'] = self.get_element(article, 'p[itemprop=author]').strip()
+        output['datetime'] = article.select('meta[itemprop=datePublished]')[0]['content']
+        if '' in list(output.values()):
+            raise Exception('Something went wrong and one var is empty')
+        # sleep(2)
+        return output
+
+
+if __name__ == '__main__':
+    url = 'https://9to5mac.com/2012/01/03/apple-subsidiary-filemaker-ships-one-million-units-of-bento-database-software/'
+
+    test = NineToFiveMacParser('NinetoFivemac.xlsx')
     test.parse()
