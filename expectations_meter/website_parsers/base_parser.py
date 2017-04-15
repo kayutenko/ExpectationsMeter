@@ -13,7 +13,8 @@ class Parser:
     def __init__(self, output):
         if os.path.exists(output):
             output = ''.join(output.split('.')[:-1]) + '_1' + '.xlsx'
-        self.output = pd.ExcelWriter(output, engine='openpyxl')
+        # self.output = pd.ExcelWriter(output, engine='openpyxl')
+        self.output = output
         self.urls_parsed = 0
         pass
 
@@ -39,11 +40,17 @@ class Parser:
     def write_data(self, data):
         data = pd.DataFrame([list(data.values())], columns=list(data.keys()))
         if self.urls_parsed == 0:
-            data.to_excel(self.output, sheet_name='Sheet1', index=False)
-            self.output.save()
+            try:
+                data.to_csv(self.output, index=False)
+                # self.output.save()
+            except Exception as e:
+                print('csv saving error', e)
         else:
-            data.to_excel(self.output, startrow= self.urls_parsed + 1, sheet_name= 'Sheet1', header=None, index=False)
-            self.output.save()
+            try:
+                data.to_csv(self.output, mode='a', header=False, index=False)
+                # self.output.save()
+            except Exception as e:
+                print('csv saving error', e)
 
     def parse(self):
         urls = self.urls_collector()
@@ -59,16 +66,16 @@ class Parser:
                     if user_answer == 'Y':
                         break
                     elif user_answer == 'N':
-                        self.output.close()
+                        # self.output.close()
                         quit()
                     else:
                         user_answer = input('Parsing paused. Continue? (Y/N) ')
             except Exception as e:
                 print('An Error occurred with url: {} {}'.format(url, e))
-                self.output.save()
-                self.output.close()
-        self.output.save()
-        self.output.close()
+                # self.output.save()
+                # self.output.close()
+        # self.output.save()
+        # self.output.close()
 
 
 class MacrumorsParser(Parser):
@@ -79,10 +86,8 @@ class MacrumorsParser(Parser):
                 if month < 10:
                     month = '0' + str(month)
                 url = 'https://www.macrumors.com/archive/{year}/{month}/'.format(year=year, month=month)
-
                 html = self.get_data(url)
                 content = html.select('#contentContainer #content .wrapper')[0]
-
                 urls_found = ['http:' + a.get('href') for a in content.find_all('a')]
                 print(year, month, 'URL: ', url, "URLS found:", len(urls_found))
                 urls.extend(urls_found)
@@ -132,8 +137,6 @@ class AppleInsiderParser(Parser):
         output['body'] = re.sub('\n{2,}|\r\n','\n', body)
         output['author'] = article_data['author']['name']
         output['datetime'] = article_data['datePublished']
-        if '' in list(output.values()):
-            raise Exception('Something went wrong and one var is empty')
         return output
 
 
@@ -170,7 +173,11 @@ class NineToFiveMacParser(Parser):
 
 
 if __name__ == '__main__':
-    url = 'https://9to5mac.com/2012/01/03/apple-subsidiary-filemaker-ships-one-million-units-of-bento-database-software/'
-
-    test = NineToFiveMacParser('NinetoFivemac.xlsx')
+    test = AppleInsiderParser('AppleInsider_6.xlsx')
     test.parse()
+
+    # test = NineToFiveMacParser('NineToFiveMac.xlsx')
+    # test.parse()
+
+    # test = MacrumorsParser('MacRummors5.csv')
+    # test.parse()
