@@ -1,0 +1,49 @@
+SMARTPHONES
+SCREEN
+    DISPLAY
+        TYPE
+            LED
+                OLED
+            LCD
+                TFT
+        RESOLUTION
+            960X640
+            1136X640
+            1335X750
+            1920X1080
+            1048X768
+            2048X1535
+        INCH-SIZE
+            3,5"
+            4"
+            4.7"
+            5.5"
+        PIXEL DENSITY (PPI)
+            330
+            400
+            160
+        PIXEL MATRIX TYPE
+            PENTILE
+            STRIPE 
+        ASPECT-RATIO
+            16:9
+            16:10
+            4:3
+            3:2
+        COLOR GAMUT
+        BRIGHTNESS (NIT)
+    SCREEN GLASS
+        TEMPERED GLASS 
+            GORILLA GLASS 1
+            GORILLA GLASS 2
+            GORILLA GLASS 3
+            GORILLA GLASS 4
+            
+BATTERY
+POWER
+DESIGN
+CAMERA
+SOUND
+SENSORS
+PEREFERIA
+SOFTWARE
