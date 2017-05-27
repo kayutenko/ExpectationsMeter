@@ -7,6 +7,7 @@ from pprint import pprint as pp
 from collections import OrderedDict
 from time import sleep
 import os
+from selenium import webdriver
 
 
 class Parser:
@@ -172,12 +173,76 @@ class NineToFiveMacParser(Parser):
         return output
 
 
+class AmazonParser(Parser):
+    def __init__(self, output):
+        super().__init__(output)
+        self.driver = webdriver.Chrome()
+
+    def get_data(self, url):
+        print(url)
+        for n in range(1, 1000):
+            current_url = url.format(n)
+            print(current_url)
+            self.driver.get(current_url)
+            reviews = self.driver.find_element_by_id('cm_cr-review_list').get_attribute('innerHTML')
+            if 'Sorry, no reviews match your current selections.' not in reviews:
+                yield BeautifulSoup(reviews, 'html.parser')
+            else:
+                break
+
+    def get_reviews(self, bs_data):
+        reviews = bs_data.select('.a-section.review > .celwidget')
+        return reviews
+
+    def review_parser(self, bs_review):
+        output = OrderedDict()
+        output['stars'] = self.get_element(bs_review, 'i[data-hook=review-star-rating] > span.a-icon-alt')
+        output['title'] = self.get_element(bs_review, 'a.review-title')
+        output['body'] = self.get_element(bs_review, 'span.review-text').strip()
+        output['author'] = self.get_element(bs_review, 'a.author').strip()
+        output['date'] = self.get_element(bs_review, 'span.review-date').strip()
+        # if '' in list(output.values()):
+        #     raise Exception('Something went wrong and one var is empty')
+        # # sleep(2)
+        return output
+
+    def parse(self, start_urls):
+        for url in start_urls:
+            for page in self.get_data(url):
+                for review in self.get_reviews(page):
+                    try:
+                        review_data = self.review_parser(review)
+                        self.write_data(review_data)
+                        self.urls_parsed += 1
+                    except KeyboardInterrupt:
+                        user_answer = input('Parsing paused. Continue? (Y/N) ')
+                        while True:
+                            if user_answer == 'Y':
+                                break
+                            elif user_answer == 'N':
+                                quit()
+                            else:
+                                user_answer = input('Parsing paused. Continue? (Y/N) ')
+                    except Exception as e:
+                        print('An Error occurred with url: {} {}'.format(url, e))
+
+
 if __name__ == '__main__':
-    test = AppleInsiderParser('AppleInsider_6.xlsx')
-    test.parse()
+    # test = AppleInsiderParser('AppleInsider_6.xlsx')
+    # test.parse()
 
     # test = NineToFiveMacParser('NineToFiveMac.xlsx')
     # test.parse()
 
     # test = MacrumorsParser('MacRummors5.csv')
     # test.parse()
+    with open('..\\sentiment_analysis\\seed_urls_ipads', 'r', encoding='utf-8') as f:
+        start_urls = [url.strip('\n') for url in f.readlines()]
+    test = AmazonParser('AmazonAppleiPads.csv')
+    test.parse(start_urls)
+    del(test)
+
+    with open('..\\sentiment_analysis\\seed_urls_macs', 'r', encoding='utf-8') as f:
+        start_urls = [url.strip('\n') for url in f.readlines()]
+    test2 = AmazonParser('AmazonAppleMacs.csv')
+    test2.parse(start_urls)
